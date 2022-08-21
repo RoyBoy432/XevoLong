@@ -1,0 +1,52 @@
+samtools version 1.9 loaded.
+Python programming language version 2.7.16 loaded.
+cutadapt/python3.6/3.4(23):ERROR:150: Module 'cutadapt/python3.6/3.4' conflicts with the currently loaded module(s) 'python/2.7.16'
+cutadapt/python3.6/3.4(23):ERROR:102: Tcl command execution failed: conflict python
+
+Perl programming language version 5.30.1 loaded.
+Perl programming language version 5.30.1 loaded.
+fastqc version 0.11.9 loaded.
+bwa version 0.7.12 loaded.
+Sun/Oracle Java SE Development Kit version 11.0.2 loaded.
+Sun/Oracle Java SE Development Kit version 11.0.2 loaded.
+picard version 2.25.1 loaded.
+Started analysis of Sample_84_R1.fastq
+Approx 5% complete for Sample_84_R1.fastq
+Approx 10% complete for Sample_84_R1.fastq
+Approx 15% complete for Sample_84_R1.fastq
+Approx 20% complete for Sample_84_R1.fastq
+Approx 25% complete for Sample_84_R1.fastq
+Approx 30% complete for Sample_84_R1.fastq
+Approx 35% complete for Sample_84_R1.fastq
+Approx 40% complete for Sample_84_R1.fastq
+Approx 45% complete for Sample_84_R1.fastq
+Approx 50% complete for Sample_84_R1.fastq
+Approx 55% complete for Sample_84_R1.fastq
+Approx 60% complete for Sample_84_R1.fastq
+Approx 65% complete for Sample_84_R1.fastq
+Approx 70% complete for Sample_84_R1.fastq
+Approx 75% complete for Sample_84_R1.fastq
+Approx 80% complete for Sample_84_R1.fastq
+Approx 85% complete for Sample_84_R1.fastq
+Approx 90% complete for Sample_84_R1.fastq
+Approx 95% complete for Sample_84_R1.fastq
+Started analysis of Sample_84_R2.fastq
+Approx 5% complete for Sample_84_R2.fastq
+Approx 10% complete for Sample_84_R2.fastq
+Approx 15% complete for Sample_84_R2.fastq
+Approx 20% complete for Sample_84_R2.fastq
+Approx 25% complete for Sample_84_R2.fastq
+Approx 30% complete for Sample_84_R2.fastq
+Approx 35% complete for Sample_84_R2.fastq
+Approx 40% complete for Sample_84_R2.fastq
+Approx 45% complete for Sample_84_R2.fastq
+Approx 50% complete for Sample_84_R2.fastq
+Approx 55% complete for Sample_84_R2.fastq
+Approx 60% complete for Sample_84_R2.fastq
+Approx 65% complete for Sample_84_R2.fastq
+Approx 70% complete for Sample_84_R2.fastq
+Approx 75% complete for Sample_84_R2.fastq
+Approx 80% complete for Sample_84_R2.fastq
+Approx 85% complete for Sample_84_R2.fastq
+Approx 90% complete for Sample_84_R2.fastq
+Approx 95% complete for Sample_84_R2.fastq
