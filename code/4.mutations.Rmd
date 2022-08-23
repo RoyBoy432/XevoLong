@@ -1,0 +1,174 @@
+---
+title: "Yeast longevity - mutations"
+author: "Jay T. Lennon and Roy Moger-Reischer"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes:
+  - \usepackage{array}
+output: pdf_document
+geometry: margin=2.54cm
+---
+
+## Clear workspace and set directory
+```{r setup}
+rm(list=ls())
+setwd("~/Github/XevoLong")
+```
+
+## Load packages and functions
+```{r setup}
+require("png")
+require("dplyr")
+require("tidyverse")
+require("grid")
+require("gtools")
+#require("lme4")
+#require("lmerTest")
+require("nlme")
+sem <- function(x) sqrt(var(x)/length(x))
+cv <- function(x) 100*( sd(x)/mean(x))
+```
+
+## Load data 
+```{r}
+# treatment data (strain, replicate, treatment)
+treats <- read.csv("data/gxp.legend.csv")
+
+# raw mutations
+raw.muts <- read.csv("data/XL_gxp.csv")
+
+# polymorphic mutations (change value to remove rare mutations)
+p.muts <- raw.muts[, which(colSums(raw.muts) >= 0)]
+
+# total mutations
+t.mut.mat <- (p.muts > 0) * 1 # convert polymorphic to presence-absence
+t.sum <- rowSums(t.mut.mat) # sum mutations by population
+t.muts <- cbind(treats, t.sum)
+t.muts <- t.muts[order(t.muts$order),]
+t.muts$strain <- as.factor(t.muts$strain)
+```
+
+## Summarize data
+```{r}
+# Non-longevity treatments
+t.muts.NL.ind <- filter(t.muts, treat == c("NL")) 
+t.muts.NL <- t.muts.NL.ind %>%  
+  group_by(treat, strain = fct_inorder(strain)) %>%
+   dplyr::summarise(mean = mean(t.sum), sem = sem(t.sum))
+
+# Longevity treatment
+t.muts.L.ind <- filter(t.muts, treat == c("L")) 
+t.muts.L <- t.muts.L.ind %>%  
+  group_by(treat, strain = fct_inorder(strain)) %>%
+   dplyr::summarise(mean = mean(t.sum), sem = sem(t.sum))
+```
+
+## Make figure
+```{r}
+# Create x-axis values
+x.ind <- c(rep(1,5), rep(3,5), rep(5,5), rep(7,5), 
+        rep(9,5), rep(11,5), rep(13,5), rep(15,5))
+x <- c(1, 3, 5, 7, 9, 11, 13, 15)
+
+png(filename="~/GitHub/XevoLong/figures/Fig4.png",
+    width = 1200, height = 900, res = 96*2)
+
+plot.new()
+par(mar = c(7, 7, 5, 7))
+
+plot(jitter(x.ind, amount = 0.5), t.muts.NL.ind$t.sum, xlim = c(0, 16),
+     ylim = c(0, 200), type = "p", pch = 22, bg = "lightblue", 
+     col = "lightblue", cex = 0.75, ylab = "", xlab = "", 
+     cex.lab = 1.5, las = 1, lwd = 2, yaxt = "n", xaxt = "n")
+box(lwd = 2)
+
+points(jitter(x.ind, amount = 0.5), t.muts.L.ind$t.sum,
+       pch = 22, bg = "pink", col = "pink", lwd = 2, cex = 0.75)
+
+# Add means
+points(x, t.muts.NL$mean, pch = 22, 
+      bg = "blue", col = "blue", lwd = 1.25, cex = 2)
+
+points(x, t.muts.L$mean, pch = 22, 
+      bg = "red", col = "red", lwd = 1.25, cex = 2)
+
+# Add error bars
+arrows(x0 = x, y0 = t.muts.NL$mean, 
+       y1 = t.muts.NL$mean + t.muts.NL$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "blue")
+
+arrows(x0 = x, y0 = t.muts.NL$mean, 
+       y1 = t.muts.NL$mean - t.muts.NL$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "blue")
+
+arrows(x0 = x, y0 = t.muts.L$mean, 
+       y1 = t.muts.L$mean + t.muts.L$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "red")
+
+arrows(x0 = x, y0 = t.muts.L$mean, 
+       y1 = t.muts.L$mean - t.muts.L$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "red")
+
+# Add ticks
+axis(side = 1, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at = c(1, 3, 5, 7, 9, 11, 13, 15), labels = F)
+axis(side = 3, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at=c(1, 3, 5, 7, 9, 11, 13, 15), labels = F)
+axis(side = 2, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+    labels = c("0", "50", "100", "150", "200"), at = c(0, 50, 100, 150, 200))
+axis(side = 4, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at=c(0, 50, 100, 150, 200), labels = F)
+
+# Add axis labels
+mtext(expression('Strains'), side = 1,
+      outer = TRUE, cex = 1.5, line = -2.5, adj = 0.5)
+
+mtext(expression('Number of mutations'), side = 2,
+      outer = TRUE, cex = 1.5, line = -3, adj = 0.6)
+
+# Add legend
+
+legend(0.1, 205, legend=c("no longevity", "longevity"),
+       col=c("blue", "red"), pt.bg = c("blue", "red"),
+       pch = c(22, 22), pt.cex = 1.5, cex = 0.75, bty = "n")
+
+# Add strain labels
+text(x=0.38, y=-55,"wild type",srt = 60, xpd = NA, cex = 1)
+text(x=2.4, y= -50, expression(paste("rpl10a",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=4.4, y= -50, expression(paste("pmr1",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=6.4, y= -50, expression(paste("sch9",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=8.4, y= -50, expression(paste("ypt6",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=10.4, y= -50, expression(paste("tor1",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=12.4, y= -50, expression(paste("tif2",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=14.4, y= -50, "LYS2", srt = 60, xpd = NA, cex = 1)
+
+# Close Plot Device
+dev.off()
+graphics.off()
+
+# Show Plot
+img <- readPNG("~/GitHub/XevoLong/figures/Fig4.png")
+
+grid.raster(img)
+```
+
+# Stats
+```{r}
+fit <- aov(t.sum ~ strain * treat, data = t.muts)
+summary(fit)
+
+# Effect of longevity treatment: 28% increase in number of mutations
+long.effect <- t.muts %>%  
+  group_by(treat) %>%
+   dplyr::summarise(mean = mean(t.sum), sem = sem(t.sum))
+
+# Effect of strains: wild type one of the highest (118) along with tif2 (123);
+# Others were lower (~93-99) with tor1 (78) having fewest mutations
+# Seems aging mutants have reduced mutations
+# Test with contrasts?
+
+strain.effect <- t.muts %>%  
+  group_by(strain) %>%
+   dplyr::summarise(mean = mean(t.sum), sem = sem(t.sum))
+
+
+```

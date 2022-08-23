@@ -1,0 +1,223 @@
+---
+title: "Yeast longevity - multivariate mutations"
+author: "Jay T. Lennon and Roy Moger-Reischer"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes:
+  - \usepackage{array}
+output: pdf_document
+geometry: margin=2.54cm
+---
+
+## Clear workspace and set directory
+```{r setup}
+rm(list=ls())
+setwd("~/Github/XevoLong")
+```
+
+## Load packages and functions
+```{r setup}
+require("png")
+require("dplyr")
+require("tidyverse")
+require("grid")
+require("gtools")
+#require("lme4")
+#require("lmerTest")
+require("nlme")
+require("vegan")
+sem <- function(x) sqrt(var(x)/length(x))
+cv <- function(x) 100*( sd(x)/mean(x))
+```
+
+## Load data 
+```{r}
+# treatment data (strain, replicate, treatment)
+treats <- read.csv("data/gxp.legend.csv")
+
+# raw mutations
+raw.muts <- read.csv("data/XL_gxp.csv")
+
+# polymorphic mutations (change value to remove rare mutations)
+p.muts <- raw.muts[, which(colSums(raw.muts) >= 0)]
+
+# total mutations
+t.mut.mat <- (p.muts > 0) * 1 # convert polymorphic to presence-absence
+t.sum <- rowSums(t.mut.mat) # sum mutations by population
+t.muts <- cbind(treats, t.sum)
+t.muts <- t.muts[order(t.muts$order),]
+t.muts$strain <- as.factor(t.muts$strain)
+```
+
+# Define treatments 
+```{r}
+
+# Define treatments and data
+
+mutmat <- cbind(treats$strain, treats$treat, p.muts[,2:ncol(p.muts)])
+
+# "manhattan", "euclidean", "canberra", "clark", "bray", "kulczynski", "jaccard", "gower", "altGower", "morisita", "horn", "mountford", "raup", "binomial", "chao", "cao", "mahalanobis", "chisq" or "chord".
+
+# Calculate pairwise distances
+mut.dist <- vegdist(p.muts[,2:ncol(p.muts)], method = "bray", binary = "FALSE")
+#mut.dist <- vegdist(p.muts[,2:ncol(p.muts)], method = "jaccard")
+
+# Principal Coordinates Analysis (PCoA)
+pc <- cmdscale(mut.dist, eig = TRUE, k = 3)
+explainvar1 <- round(pc$eig[1] / sum(pc$eig), 3) * 100
+explainvar2 <- round(pc$eig[2] / sum(pc$eig), 3) * 100
+explainvar3 <- round(pc$eig[3] / sum(pc$eig), 3) * 100
+sum.eig <- sum(explainvar1, explainvar2, explainvar3)
+
+# OTU Scores
+mut.scores <- t(cor(pc$points, p.muts[,2:ncol(p.muts)]))
+mut.scores <- as.matrix(mut.scores)[,1:2]
+mut.scores <- mut.scores[abs(mut.scores[,1]) > 0.7|abs(mut.scores[,2]) > 0.7,]
+
+# PERMANOVA
+strains <- treats[,4]
+treat <- treats[,6]
+perm <- adonis(p.muts[,2:ncol(p.muts)] ~ strains * treat, method = "bray", binary = FALSE)
+perm
+```
+
+## PCoA Plot
+```{r, results = "hide"}
+png(filename="~/GitHub/XevoLong/figures/Fig5.png",
+    width = 1200, height = 1200, res = 96*2)
+
+plot.new()
+par(mar = c(7, 7, 5, 7))
+
+plot(pc$points[ ,1], pc$points[ ,2],
+     ylim = c(-0.45, 0.55), xlim = c(-0.55, 0.45),
+     xlab = paste("PCoA 1 (", explainvar1, "%)", sep = ""),
+     ylab = paste("PCoA 2 (", explainvar2, "%)", sep = ""),
+     #xlab = "", ylab = "", xaxt = "n", yaxt = "n",
+     pch = 22, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1,
+     axes = FALSE)
+
+# Add Axes
+axis(side = 2, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     labels = c("-0.4",  "0.0", "0.4"), at = c(-0.4, 0, 0.4))
+axis(side = 4, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at=c(-0.4, 0, 0.4), labels = F)
+axis(side = 1, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     labels = c("-0.4",  "0.0", "0.4"), at = c(-0.4, 0, 0.4))
+axis(side = 3, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at = c(-0.4, 0, 0.4), labels = F)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+
+# Identify ordinates by treatment
+
+pc.points <- cbind(mutmat[,1:2], pc$points)
+colnames(pc.points) <- c("strain", "treat", "PC1", "PC2", "PC3")
+
+rpl19a.NL <- pc.points %>%
+  filter(strain == "rpl19a" & treat == "NL")
+
+pmr1.NL <- pc.points %>%
+  filter(strain == "pmr1" & treat == "NL")
+
+sch9.NL <- pc.points %>%
+  filter(strain == "sch9" & treat == "NL")
+
+ypt6.NL <- pc.points %>%
+  filter(strain == "ypt6" & treat == "NL")
+
+tor1.NL <- pc.points %>%
+  filter(strain == "tor1" & treat == "NL")
+
+tif2.NL <- pc.points %>%
+  filter(strain == "tif2" & treat == "NL")
+
+JD174.NL <- pc.points %>%
+  filter(strain == "JD174" & treat == "NL")
+
+BY4742.NL <- pc.points %>%
+  filter(strain == "BY4742" & treat == "NL")
+
+rpl19a.L <- pc.points %>%
+  filter(strain == "rpl19a" & treat == "L")
+
+pmr1.L <- pc.points %>%
+  filter(strain == "pmr1" & treat == "L")
+
+sch9.L <- pc.points %>%
+  filter(strain == "sch9" & treat == "L")
+
+ypt6.L <- pc.points %>%
+  filter(strain == "ypt6" & treat == "L")
+
+tor1.L <- pc.points %>%
+  filter(strain == "tor1" & treat == "L")
+
+tif2.L <- pc.points %>%
+  filter(strain == "tif2" & treat == "L")
+
+JD174.L <- pc.points %>%
+  filter(strain == "JD174" & treat == "L")
+
+BY4742.NL <- pc.points %>%
+  filter(strain == "BY4742" & treat == "L")
+
+
+# Add points corresponding to treatments
+points(rpl19a.NL[,3], rpl19a.NL[,4], pch = 1,
+       cex = 2, col = "blue", lwd = 2)
+
+points(pmr1.NL[,3], pmr1.NL[,4], pch = 2,
+       cex = 2, col = "blue", lwd = 2)
+
+points(sch9.NL[,3], sch9.NL[,4], pch = 3,
+       cex = 2, col = "blue", lwd = 2)
+
+points(ypt6.NL[,3], ypt6.NL[,4], pch = 4,
+       cex = 2, col = "blue", lwd = 2)
+
+points(tor1.NL[,3], tor1.NL[,4], pch = 5,
+       cex = 2, col = "blue", lwd = 2)
+
+points(tif2.NL[,3], tif2.NL[,4], pch = 6,
+       cex = 2, col = "blue", lwd = 2)
+
+points(JD174.NL[,3], JD174.NL[,4], pch = 7,
+       cex = 2, col = "blue", lwd = 2)
+
+points(JD174.NL[,3], JD174.NL[,4], pch = 8,
+       cex = 2, col = "blue", lwd = 2)
+
+
+points(rpl19a.L[,3], rpl19a.L[,4], pch = 21,
+       cex = 2, col = "red", lwd = 2)
+
+points(pmr1.L[,3], pmr1.L[,4], pch = 22,
+       cex = 2, col = "red", lwd = 2)
+
+points(sch9.L[,3], sch9.L[,4], pch = 23,
+       cex = 2, col = "red", lwd = 2)
+
+points(ypt6.L[,3], ypt6.L[,4], pch = 24,
+       cex = 2, col = "red", lwd = 2)
+
+points(tor1.L[,3], tor1.L[,4], pch = 25,
+       cex = 2, col = "red", lwd = 2)
+
+points(tif2.L[,3], tif2.L[,4], pch = 23,
+       cex = 2, col = "red", lwd = 2)
+
+points(JD174.L[,3], JD174.L[,4], pch = 24,
+       cex = 2, col = "red", lwd = 2)
+
+points(JD174.L[,3], JD174.L[,4], pch = 25,
+       cex = 2, col = "red", lwd = 2)
+
+
+# Close Plot Device
+dev.off()
+graphics.off()
+
+# Show Plot
+img <- readPNG("~/GitHub/XevoLong/figures/Fig5.png")
+grid.raster(img)
+```
