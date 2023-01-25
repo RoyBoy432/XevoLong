@@ -1,2 +1,0 @@
-Analysis complete for Sample_84_R1.fastq
-Analysis complete for Sample_84_R2.fastq
