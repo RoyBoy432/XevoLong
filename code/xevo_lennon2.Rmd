@@ -70,13 +70,311 @@ ance0df$strain<-factor(ance0df$strain, levels=c("rpl19a","pmr1","sch9","ypt6","t
 
 ancrrdf<-read_csv("~/GitHub/XevoLong/data/cases_anc.ANOVA_rr.csv")
 ancrrdf$Strain_factor<-factor(ancrrdf$Strain, levels=c("2","4","5","9","11","16","19","0"))
-ancrrdf$Strain<-recode(ancrrdf$Strain_factor, "2" = "rpl19aΔ", "4" = "pmr1Δ", "5" = "sch9Δ", "9"="ypt6Δ","11"="tor1Δ","16"="tif2Δ","19"="LYS2", "0"="WT")
-ancrrdf$Strain<-factor(ancrrdf$Strain, levels=c("rpl19aΔ","pmr1Δ","sch9Δ","ypt6Δ","tor1Δ","tif2Δ","LYS2","WT"))
+ancrrdf$Strain<-recode(ancrrdf$Strain_factor, "2" = "rpl19a", "4" = "pmr1", "5" = "sch9",
+              "9"="ypt6","11"="tor1","16"="tif2","19"="LYS2", "0"="WT")
+ancrrdf$Strain<-factor(ancrrdf$Strain, levels=c("rpl19a","pmr1","sch9","ypt6","tor1","tif2","LYS2","WT"))
 ```
 
+
+# Lifespan
 ```{r}
 myydf_full <- as_tibble(mydf)
-myydf <- filter(myydf_full, Selection != "Anc")
+
+#convert reproductive rate from per hour to per day
+myydf_full$off.per.hr_50.50 <- myydf_full$off.per.hr_50.50*24
+
+#myydf_full$genotype <- as.factor(myydf_full$genotype)
+
+# lifespan data for NL treatment
+ls.NL.ind <- filter(myydf_full, selection == c("NL")) 
+ls.NL <- ls.NL.ind  %>%  
+  group_by(genotype = fct_inorder(genotype)) %>%
+   dplyr::summarise(mean = mean(e0), sem = sem(e0))
+
+# lifespan data for NL treatment
+ls.L.ind <- filter(myydf_full, selection == c("L")) 
+ls.L <- ls.L.ind  %>%  
+  group_by(genotype = fct_inorder(genotype)) %>%
+   dplyr::summarise(mean = mean(e0), sem = sem(e0))
+
+# lifespan data for ancestors
+ls.A.ind <- filter(myydf_full, selection == c("Anc")) 
+ls.A <- ls.A.ind  %>%  
+  group_by(genotype = fct_inorder(genotype)) %>%
+   dplyr::summarise(mean = mean(e0), sem = sem(e0))
+
+## Make figure
+
+# Create x-axis values
+x.ind <- c(rep(1,5), rep(3,5), rep(5,5), rep(7,5), 
+        rep(9,5), rep(11,5), rep(13,5), rep(15,5))
+x <- c(1, 3, 5, 7, 9, 11, 13, 15)
+
+png(filename="~/GitHub/XevoLong/figures/Fig1.png",
+    width = 1200, height = 900, res = 96*2)
+
+plot.new()
+par(mar = c(7, 7, 5, 7))
+
+plot(jitter(x.ind, amount = 0.5), ls.NL.ind$e0, xlim = c(0, 16),
+     ylim = c(-1, 21), type = "p", pch = 22, bg = "lightblue", 
+     col = "lightblue", cex = 0.75, ylab = "", xlab = "", 
+     cex.lab = 1.5, las = 1, lwd = 2, yaxt = "n", xaxt = "n")
+box(lwd = 2)
+
+points(jitter(x.ind, amount = 0.5), ls.L.ind$e0,
+       pch = 22, bg = "pink", col = "pink", lwd = 2, cex = 0.75)
+
+# Add treatment means
+points(x, ls.NL$mean, pch = 22, 
+      bg = "blue", col = "blue", lwd = 1.25, cex = 2)
+
+points(x, ls.L$mean, pch = 22, 
+      bg = "red", col = "red", lwd = 1.25, cex = 2)
+
+# Add error bars
+arrows(x0 = x, y0 = ls.NL$mean, 
+       y1 = ls.NL$mean + ls.NL$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "blue")
+
+arrows(x0 = x, y0 = ls.NL$mean, 
+       y1 = ls.NL$mean - ls.NL$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "blue")
+
+arrows(x0 = x, y0 = ls.L$mean, 
+       y1 = ls.L$mean + ls.L$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "red")
+
+arrows(x0 = x, y0 = ls.L$mean, 
+       y1 =ls.L$mean - ls.L$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "red")
+
+# Add ancestors means 
+segments(x0 = 0.2, y0 = ls.A$mean[1], x1 = 1.8, y1 = ls.A$mean[1], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 2.2, y0 = ls.A$mean[2], x1 = 3.8, y1 = ls.A$mean[2], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 4.2, y0 = ls.A$mean[3], x1 = 5.8, y1 = ls.A$mean[3], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 6.2, y0 = ls.A$mean[4], x1 = 7.8, y1 = ls.A$mean[4], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 8.2, y0 = ls.A$mean[5], x1 = 9.8, y1 = ls.A$mean[5], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 10.2, y0 = ls.A$mean[6], x1 = 11.8, y1 = ls.A$mean[6], col = "black", lty = 3, lwd = 2.5)
+segments(x0 = 12.2, y0 = ls.A$mean[7], x1 = 13.8, y1 = ls.A$mean[7], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 14.2, y0 = ls.A$mean[8], x1 = 15.8, y1 = ls.A$mean[8], col = "black", lty = 3, lwd = 2.5) 
+
+# Add ticks
+axis(side = 1, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at = c(1, 3, 5, 7, 9, 11, 13, 15), labels = F)
+axis(side = 3, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at=c(1, 3, 5, 7, 9, 11, 13, 15), labels = F)
+axis(side = 2, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+    labels = c("0", "5", "10", "15", "20"), at = c(0, 5, 10, 15, 20))
+axis(side = 4, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at=c(0, 5, 10, 15, 20), labels = F)
+
+# Add axis labels
+mtext(expression('Strains'), side = 1,
+      outer = TRUE, cex = 1.5, line = -2.5, adj = 0.5)
+
+mtext(expression('Life expectancy (d)'), side = 2,
+      outer = TRUE, cex = 1.5, line = -4, adj = 0.6)
+
+# Add legend
+
+legend(0.1, 21, legend=c("no longevity", "longevity"),
+       col=c("blue", "red"), pt.bg = c("blue", "red"),
+       pch = c(22, 22), pt.cex = 1.5, cex = 1, bty = "n")
+
+# Add strain labels
+text(x=0.38, y=-7.5,"wild type",srt = 60, xpd = NA, cex = 1)
+text(x=2.4, y= -7, expression(paste("rpl10a",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=4.4, y= -7, expression(paste("pmr1",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=6.4, y= -7, expression(paste("sch9",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=8.4, y= -7, expression(paste("ypt6",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=10.4, y= -7, expression(paste("tor1",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=12.4, y= -7, expression(paste("tif2",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=14.4, y= -7, "LYS2", srt = 60, xpd = NA, cex = 1)
+
+# Close Plot Device
+dev.off()
+graphics.off()
+
+# Show Plot
+img <- readPNG("~/GitHub/XevoLong/figures/Fig1.png")
+
+grid.raster(img)
+
+# Statistics
+
+fit.ls <- aov(e0 ~ genotype * selection, data = myydf_full)
+summary(fit.ls)
+
+#                   Df Sum Sq Mean Sq F value   Pr(>F)    
+# genotype            7  210.8   30.12  10.126 1.86e-08 ***
+# selection           2  287.8  143.89  48.374 1.59e-13 ***
+# genotype:selection 14   96.5    6.89   2.317   0.0119 *  
+# Residuals          64  190.4    2.97    
+
+
+# Effect of longevity treatment: increased life expectancy by 3.71 d or 120%
+long.effect <- myydf_full %>%  
+  group_by(selection) %>%
+   dplyr::summarise(mean = mean(e0), sem = sem(e0))
+```
+
+# Reproduction
+```{r}
+#myydf_full$genotype <- as.factor(myydf_full$genotype)
+
+# lifespan data for NL treatment
+repo.NL.ind <- filter(myydf_full, selection == c("NL")) 
+repo.NL <- repo.NL.ind  %>%  
+  group_by(genotype = fct_inorder(genotype)) %>%
+   dplyr::summarise(mean = mean(off.per.hr_50.50), sem = sem(off.per.hr_50.50))
+
+# lifespan data for NL treatment
+repo.L.ind <- filter(myydf_full, selection == c("L")) 
+repo.L <- repo.L.ind  %>%  
+  group_by(genotype = fct_inorder(genotype)) %>%
+   dplyr::summarise(mean = mean(off.per.hr_50.50), sem = sem(off.per.hr_50.50))
+
+# lifespan data for ancestors
+repo.A.ind <- filter(myydf_full, selection == c("Anc")) 
+repo.A <- repo.A.ind  %>%  
+  group_by(genotype = fct_inorder(genotype)) %>%
+   dplyr::summarise(mean = mean(off.per.hr_50.50), sem = sem(off.per.hr_50.50))
+
+## Make figure
+
+# Create x-axis values
+x.ind <- c(rep(1,5), rep(3,5), rep(5,5), rep(7,5), 
+        rep(9,5), rep(11,5), rep(13,5), rep(15,5))
+x <- c(1, 3, 5, 7, 9, 11, 13, 15)
+
+png(filename="~/GitHub/XevoLong/figures/Fig2.png",
+    width = 1200, height = 900, res = 96*2)
+
+plot.new()
+par(mar = c(7, 7, 5, 7))
+
+plot(jitter(x.ind, amount = 0.5), repo.NL.ind$off.per.hr_50.50, xlim = c(0, 16),
+     ylim = c(10, 22), type = "p", pch = 22, bg = "lightblue", 
+     col = "lightblue", cex = 0.75, ylab = "", xlab = "", 
+     cex.lab = 1.5, las = 1, lwd = 2, yaxt = "n", xaxt = "n")
+box(lwd = 2)
+
+points(jitter(x.ind, amount = 0.5), repo.L.ind$off.per.hr_50.50,
+       pch = 22, bg = "pink", col = "pink", lwd = 2, cex = 0.75)
+
+# Add treatment means
+points(x, repo.NL$mean, pch = 22, 
+      bg = "blue", col = "blue", lwd = 1.25, cex = 2)
+
+points(x, repo.L$mean, pch = 22, 
+      bg = "red", col = "red", lwd = 1.25, cex = 2)
+
+# Add error bars
+arrows(x0 = x, y0 = repo.NL$mean, 
+       y1 = repo.NL$mean + repo.NL$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "blue")
+
+arrows(x0 = x, y0 = repo.NL$mean, 
+       y1 = repo.NL$mean - repo.NL$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "blue")
+
+arrows(x0 = x, y0 = repo.L$mean, 
+       y1 = repo.L$mean + repo.L$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "red")
+
+arrows(x0 = x, y0 = repo.L$mean, 
+       y1 = repo.L$mean - repo.L$sem, 
+       angle = 90, length = 0.1, lwd = 2, col = "red")
+
+# Add ancestors means 
+segments(x0 = 0.2, y0 = repo.A$mean[1], x1 = 1.8, y1 = repo.A$mean[1], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 2.2, y0 = repo.A$mean[2], x1 = 3.8, y1 = repo.A$mean[2], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 4.2, y0 = repo.A$mean[3], x1 = 5.8, y1 = repo.A$mean[3], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 6.2, y0 = repo.A$mean[4], x1 = 7.8, y1 = repo.A$mean[4], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 8.2, y0 = repo.A$mean[5], x1 = 9.8, y1 = repo.A$mean[5], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 10.2, y0 = repo.A$mean[6], x1 = 11.8, y1 = repo.A$mean[6], col = "black", lty = 3, lwd = 2.5)
+segments(x0 = 12.2, y0 = repo.A$mean[7], x1 = 13.8, y1 = repo.A$mean[7], col = "black", lty = 3, lwd = 2.5) 
+segments(x0 = 14.2, y0 = repo.A$mean[8], x1 = 15.8, y1 = repo.A$mean[8], col = "black", lty = 3, lwd = 2.5) 
+
+# Add ticks
+axis(side = 1, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at = c(1, 3, 5, 7, 9, 11, 13, 15), labels = F)
+axis(side = 3, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at=c(1, 3, 5, 7, 9, 11, 13, 15), labels = F)
+axis(side = 2, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+    labels = c("10", "15", "20"), at = c(10, 15, 20))
+axis(side = 4, lwd.ticks = 2, cex.axis = 1.25, las = 1,
+     at=c(10, 15, 20), labels = F)
+
+# Add axis labels
+mtext(expression('Strains'), side = 1,
+      outer = TRUE, cex = 1.5, line = -2.5, adj = 0.5)
+
+mtext(expression('Reproduction (# d'^-1*')'), side = 2,
+      outer = TRUE, cex = 1.5, line = -4, adj = 0.6)
+      
+# Add legend
+
+legend(0.1, 22, legend = c("no longevity", "longevity"),
+       col=c("blue", "red"), pt.bg = c("blue", "red"),
+       pch = c(22, 22), pt.cex = 1.5, cex = 1, bty = "n")
+
+# Add strain labels
+text(x=0.38, y= 7,"wild type",srt = 60, xpd = NA, cex = 1)
+text(x=2.4, y= 7, expression(paste("rpl10a",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=4.4, y= 7, expression(paste("pmr1",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=6.4, y= 7, expression(paste("sch9",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=8.4, y= 7, expression(paste("ypt6",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=10.4, y= 7, expression(paste("tor1",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=12.4, y= 7, expression(paste("tif2",Delta,)), srt = 60, xpd = NA, cex = 1)
+text(x=14.4, y= 7, "LYS2", srt = 60, xpd = NA, cex = 1)
+
+# Close Plot Device
+dev.off()
+graphics.off()
+
+# Show Plot
+img <- readPNG("~/GitHub/XevoLong/figures/Fig2.png")
+
+grid.raster(img)
+
+# Statistics
+
+fit.repo <- aov(off.per.hr_50.50 ~ genotype * selection, data = myydf_full)
+summary(fit.repo)
+
+#                   Df Sum Sq Mean Sq F value   Pr(>F)    
+# genotype            7 170.16   24.31  18.885 2.08e-13 ***
+# selection           2 114.86   57.43  44.618 7.35e-13 ***
+# genotype:selection 14  54.44    3.89   3.021  0.00132 ** 
+# Residuals          64  82.38    1.29                       
+
+# Effect of longevity treatment: decreased reproduction by 2.3 offspring per day d or 13.6%
+repo.effect <- myydf_full %>%  
+  group_by(selection) %>%
+   dplyr::summarise(mean = mean(off.per.hr_50.50), sem = sem(off.per.hr_50.50))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #anc.colors<-c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey")
 
