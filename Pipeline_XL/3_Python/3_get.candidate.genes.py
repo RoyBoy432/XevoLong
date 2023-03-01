@@ -11,6 +11,7 @@ import os, math, pickle
 #import mult_tools as mt
 import numpy as np
 import pandas as pd
+import statsmodels.api
 import random
 from decimal import Decimal
 import time
@@ -385,15 +386,11 @@ def simulate_mutations_noGC(mutation_freq_tup, indict, reps=10000):
 def generate_dict_of_simulation_for_each_poptrt(poptrtnames,freqlistsDict,index_genbank_features_Dict,reps_requested,filenamer=""):
     outdict=dict();osvar=str(time.time());os.mkdir(path=workingdir+"\\Pipeline_XL\\3_Python\\"+osvar)
     for ptI, poptrt in enumerate(poptrtnames):
-        outdict[poptrt] = simulate_mutations_noGC((freqlistsDict[poptrt]),DD,reps = reps_requested)
+        outdict[poptrt] = simulate_mutations_GC((freqlistsDict[poptrt]),DD,reps = reps_requested)
         pdexporter=pd.DataFrame.from_dict(outdict[poptrt])
         pdexporter.to_csv(index=True,path_or_buf=workingdir+"\\Pipeline_XL\\3_Python\\"+osvar+"\\simout_"+filenamer+"_"+str(poptrt)+"_"+str(reps_requested)+".csv")
         
     return outdict
-
-#%%
-mdf,mdfl,mdfs=output_candidates_from_gxp(poptrtsD,gxpcounts_fixed)
-mdp,mdpl,mdps=output_candidates_from_gxp(poptrtsD,gxpcounts_p)
 
 
 #%%
@@ -425,38 +422,172 @@ myrec=recs[0]#chrom I
         
 print(repr(myrec.seq))'''
 #%%
+atRelRateToInput=.063+.110+.144;gcRelRateToInput=.152+.182+.350
 start=time.time()
-DD = index_genbank_features_multiplechroms(recs, "gene", "locus_tag", 'gene', AT_rel_rate = 1, GC_rel_rate=1)
+DD = index_genbank_features_multiplechroms(recs, "gene", "locus_tag", 'gene', AT_rel_rate = atRelRateToInput, GC_rel_rate=gcRelRateToInput)
 end=time.time();print(end-start)
 #%%
-''' 
+ 
 start=time.time()
 simoutspNDict=generate_dict_of_simulation_for_each_poptrt(poptrtsL,freqlistspN,DD,5357,"pN")
 end=time.time();print(end-start)
-'''
-#%%    
-#start=time.time();print(start)
-#simoutsfNDict=generate_dict_of_simulation_for_each_poptrt(poptrtsL,freqlistsfN,DD,5357,"fN")
-#end=time.time();print(end-start)
 
-#start=time.time();print(start)
-#simoutspSDict=generate_dict_of_simulation_for_each_poptrt(poptrtsL,freqlistspS,DD,5357,"pS")
-#end=time.time();print(end-start)    
+#%%    
+start=time.time();print(start)
+simoutsfNDict=generate_dict_of_simulation_for_each_poptrt(poptrtsL,freqlistsfN,DD,5357,"fN")
+end=time.time();print(end-start)
+
+#%%
+start=time.time();print(start)
+simoutspSDict=generate_dict_of_simulation_for_each_poptrt(poptrtsL,freqlistspS,DD,5357,"pS")
+end=time.time();print(end-start)    
     
-    
+#%%    
 start=time.time();print(start)
 simoutsfSDict=generate_dict_of_simulation_for_each_poptrt(poptrtsL,freqlistsfS,DD,5357,"fS")
 end=time.time();print(end-start)    
+
+#%%
+mdf,mdfl,mdfs=output_candidates_from_gxp(poptrtsD,gxpcounts_fixed)
+mdp,mdpl,mdps=output_candidates_from_gxp(poptrtsD,gxpcounts_p)
+    
+    
+
+#%%
+#Import simulation results from file
+#%%
+#You can import simulation results from a file.
+start = time.time();print(start)
+#recs = [rec for rec in SeqIO.parse(r"C:\Users\rmoge\OneDrive - Indiana University\Mycoplasma_OneDrive\Strains\syn3A_genome\Synthetic.bacterium_JCVI-Syn3A.gb", "genbank")]
+#myrec=recs[0]
+#syn1recs = [rec for rec in SeqIO.parse(r"C:\Users\rmoge\OneDrive - Indiana University\Mycoplasma_OneDrive\Strains\syn1.0_genome\Synthetic.Mycoplasma.mycoides.JCVI-syn1.0_CP002027.1.gb", "genbank")]  
+#syn1rec=syn1recs[0]
+
+#GD = gene_to_tag(myrec, "locus_tag", "gene")
+#DD = index_genbank_features(myrec, "gene", "locus_tag", 'gene', AT_rel_rate = 35/0.76, GC_rel_rate=486/0.24)
+#GD1 = gene_to_tag(syn1rec, "locus_tag", "gene")
+#DD1 = index_genbank_features(syn1rec, "gene", "locus_tag", 'gene', AT_rel_rate=219/0.76,GC_rel_rate=1591/0.24)
+
+
+testingBY4742_pd = pd.read_csv(workingdir+"\\Pipeline_XL\\3_Python\\fS\\simout_fS_BY4742_L_5357.csv")
+testingBY4742_dic = pd.DataFrame.to_dict(testingBY4742_pd)
+#%%
+
+def get_pvalues_from_simulations(workingdir=workingdir,popTreatments=[],poptrtsDict=poptrtsD,gxpcounts={},dirname='',repsNumber=5357):
+    import statsmodels
+    candidatesMultiplyMutated,candidatesLists,candidatesCounts=output_candidates_from_gxp(poptrtsD,gxpcounts)
+    candidatePvalsDict=dict()
+    
+    for trt in popTreatments:
+        candidatePvalsDict[trt]=dict()
+        for locusTag,v in candidatesMultiplyMutated[trt].items():
+            candidatePvalsDict[trt][locusTag]=dict()
+            candidatePvalsDict[trt][locusTag]["repsWithMutation"]=candidatesMultiplyMutated[trt][locusTag]
+            candidatePvalsDict[trt][locusTag]['pvalue']=-9
+            candidatePvalsDict[trt][locusTag]['padj']=-9
+            
+        
+        simulationsDF=pd.read_csv(workingdir+"\\Pipeline_XL\\3_Python\\"+dirname+"\\simout_"+dirname+"_"+trt+"_"+str(repsNumber)+".csv")#dirName = 'fS'
+        simsD=pd.DataFrame.to_dict(simulationsDF)
+        for cand in candidatesLists[trt]:
+            myMoreextremeCount=np.count_nonzero([i>=candidatesCounts[trt][cand] for i in simsD[cand].values()])
+            candidatePvalsDict[trt][cand]['pvalue']=myMoreextremeCount/len(simsD[cand].values())
+    
+        pvalList=list();padjListIndexCounter=0
+        for cand,candD in candidatePvalsDict[trt].items():
+            pvalList.append(candidatePvalsDict[trt][cand]['pvalue'])
+        fdrnparray=statsmodels.stats.multitest.fdrcorrection(pvalList)
+        for cand,candD in candidatePvalsDict[trt].items():
+            candidatePvalsDict[trt][cand]['padj']=fdrnparray[1][padjListIndexCounter]
+            padjListIndexCounter+=1
+    return candidatePvalsDict
+#%%
+start=time.time();print(start)
+candidatePvalsDictFixedNonsyn = get_pvalues_from_simulations(workingdir=workingdir, popTreatments=poptrtsL, poptrtsDict=poptrtsD, gxpcounts=gxpcounts_fixed, dirname='fN',repsNumber=5357)
+end=time.time();print(end-start)
+#%%
+start=time.time();print(start)
+candidatePvalsDictPolymorphicNonsyn = get_pvalues_from_simulations(workingdir=workingdir, popTreatments=poptrtsL, poptrtsDict=poptrtsD, gxpcounts=gxpcounts_p, dirname='pN',repsNumber=5357)
+end=time.time();print(end-start)
+#%%
+#os.mkdir(path=workingdir+"\\Pipeline_XL\\3_Python\\pvalues");os.mkdir(path=workingdir+"\\Pipeline_XL\\3_Python\\pvalues\\fN");os.mkdir(path=workingdir+"\\Pipeline_XL\\3_Python\\pvalues\\pN")
+for trt in poptrtsL:
+    pd.DataFrame.from_dict(candidatePvalsDictFixedNonsyn[trt]).to_csv(index=True,path_or_buf=workingdir+"\\Pipeline_XL\\3_Python\\pvalues\\fN\\"+str(trt)+"pvalues.csv")
+    pd.DataFrame.from_dict(candidatePvalsDictPolymorphicNonsyn[trt]).to_csv(index=True,path_or_buf=workingdir+"\\Pipeline_XL\\3_Python\\pvalues\\pN\\"+str(trt)+"pvalues.csv")
+#%%
+#smo1pd = pd.read_csv(r"C:\Users\rmoge\OneDrive - Indiana University\Mycoplasma_OneDrive\Strains\simulations_syn1.0_100000.csv")
+smopd = pd.read_csv(r"C:\Users\rmoge\OneDrive - Indiana University\Mycoplasma_OneDrive\Strains\simulations_syn3B_GC_only.synonymous_100000.csv")
+smo1pd = pd.read_csv(r"C:\Users\rmoge\OneDrive - Indiana University\Mycoplasma_OneDrive\Strains\simulations_syn1.0_GC_only.synonymous_100000.csv")
+
+
+smo = pd.DataFrame.to_dict(smopd)
+smo1 = pd.DataFrame.to_dict(smo1pd)
+end = time.time()
+print(end - start)
     
     
     
     
     
     
+#%%
+def get_pvalues_from_simulations(workingdir=workingdir,popTreatments=[],poptrtsDict=poptrtsD,gxpcounts={},dirname='',repsNumber=5357):
+    candidatesMultiplyMutated,candidatesLists,candidatesCounts=output_candidates_from_gxp(poptrtsD,gxpcounts)
+    candidatePvalsDict=dict()
     
+    for trt in popTreatments:
+        candidatePvalsDict[trt]=dict()
+        for locusTag,v in candidatesMultiplyMutated[trt].items():
+            candidatePvalsDict[trt][locusTag]=dict()
+            candidatePvalsDict[trt][locusTag]["repsWithMutation"]=candidatesMultiplyMutated[trt][locusTag]
+            candidatePvalsDict[trt][locusTag]['pvalue']=-9
+            candidatePvalsDict[trt][locusTag]['padj']=-9
+            
+
+        
+        simulationsDF=pd.read_csv(workingdir+"\\Pipeline_XL\\3_Python\\"+dirname+"\\simout_"+dirname+"_"+trt+"_"+str(repsNumber)+".csv")#dirName = 'fS'
+        simsD=pd.DataFrame.to_dict(simulationsDF)
+        for cand in candidatesLists[trt]:
+            myMoreextremeCount=np.count_nonzero([i>=candidatesCounts[trt][cand] for i in simsD[cand].values()])
+            candidatePvalsDict[trt][cand]['pvalue']=myMoreextremeCount/len(simsD[cand].values())
+        pass
     
+
+        pvalList=list();padjListIndexCounter=0
+        for cand,candD in candidatePvalsDict[trt].items():
+            pvalList.append(candidatePvalsDict[trt][cand]['pvalue'])
+        fdrnparray=statsmodels.stats.multitest.fdrcorrection(pvalList)
+        for cand,candD in candidatePvalsDict.items():
+            candidatePvalsDict[trt][cand]['padj']=fdrnparray[1][padjListIndexCounter]
+            padjListIndexCounter+=1
+    return candidatePvalsDict
+def get_pvalues_from_simulations(workingdir=workingdir,popTreatments=[],poptrtsDict=poptrtsD,gxpcounts={},dirname='',repsNumber=5357):
+    candidatesMultiplyMutated,candidatesLists,candidatesCounts=output_candidates_from_gxp(poptrtsD,gxpcounts)
+    candidatePvalsDict=dict()
     
+    for t in popTreatments:
+        candidatePvalsDict[t]=dict()
+        for locusTag,v in candidatesMultiplyMutated[t].items():
+            candidatePvalsDict[t][locusTag]=dict()
+            candidatePvalsDict[t][locusTag]["repsWithMutation"]=candidatesMultiplyMutated[t][locusTag]
+            candidatePvalsDict[t][locusTag]['pvalue']=-9
+            candidatePvalsDict[t][locusTag]['padj']=-9
+            
+    for trt in popTreatments:
+        
+        simulationsDF=pd.read_csv(workingdir+"\\Pipeline_XL\\3_Python\\"+dirname+"\\simout_"+dirname+"_"+t+"_"+str(repsNumber)+".csv")#dirName = 'fS'
+        simsD=pd.DataFrame.to_dict(simulationsDF)
+        for cand in candidatesLists[trt]:
+            myMoreextremeCount=np.count_nonzero([i>=candidatesCounts[trt][cand] for i in simsD[cand].values()])
+            candidatePvalsDict[trt][cand]['pvalue']=myMoreextremeCount/len(simsD[cand].values())
+        pass
     
-    
-    
-    
+    for trt in popTreatments:
+        pvalList=list();padjListIndexCounter=0
+        for cand,candD in candidatePvalsDict[trt].items():
+            pvalList.append(candidatePvalsDict[trt][cand]['pvalue'])
+        fdrnparray=statsmodels.stats.multitest.fdrcorrection(pvalList)
+        for cand,candD in candidatePvalsDict.items():
+            candidatePvalsDict[trt][cand]['padj']=fdrnparray[1][padjListIndexCounter]
+            padjListIndexCounter+=1
+    return candidatePvalsDict
