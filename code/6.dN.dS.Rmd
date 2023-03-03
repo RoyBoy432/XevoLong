@@ -12,6 +12,8 @@ geometry: margin=2.54cm
 ```{r setup}
 rm(list=ls())
 setwd("~/Github/XevoLong")
+require("knitr")
+opts_knit$set(root.dir = "~/Github/XevoLong")
 ```
 
 ## Load packages and functions
@@ -21,18 +23,20 @@ require("dplyr")
 require("tidyverse")
 require("grid")
 require("gtools")
+require("broom")
 #require("lme4")
 #require("lmerTest")
 require("nlme")
 sem <- function(x) sqrt(var(x)/length(x))
 cv <- function(x) 100*( sd(x)/mean(x))
 CL <- function(x) qt(0.975, df = length(x)-1)*sd(x)/sqrt(length(x))
-```
+
 
 ## Load data 
-```{r}
+
 # treatment data (strain, replicate, treatment)
-dat <- read.csv("data/dnds_output_with.legend.csv")
+setwd("~/Github/XevoLong")
+dat <- read.csv("./data/dnds_output_with.legend.csv")
 dat <- dat[order(dat$order),]
 dat$strain <- as.factor(dat$strain)
 ```
@@ -173,7 +177,7 @@ t.tests.L <- dnds.L.ind  %>%
 
 # Benjamini Hochberg tests for multiple comparisons
 p <- rbind(t.tests.NL[,c(1:2,4)],t.tests.L[,c(1:2,4)])
-bh <- round(p.adjust(pcombo$p.value, "BH"), 3)
+bh <- round(p.adjust(p$p.value, "BH"), 3)
 treat.rep <- c(rep("NL",8), rep("L",8))
 pcombo <- cbind(p, bh, treat.rep)
 pfilt <- filter(pcombo, p.value < 0.05) 
