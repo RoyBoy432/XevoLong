@@ -194,12 +194,3 @@ test2=get_gxp_matrix('XL_gxp_fixed.only',False)
 end=time.time()
 print(end-start)
 #%%
-def get_DN_and_DS(Ndict,Ddict):
-    
-    return
-
-myc=0
-for k,v in test1['1'].items():
-    r=random.random()
-    if v > r:
-        myc+=1

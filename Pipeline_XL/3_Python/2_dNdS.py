@@ -80,7 +80,7 @@ def get_gxp_matrix_N(output_name='',include_polymorphisms=True,output_to_keep=["
                 if frequency != 1 and include_polymorphisms==False:
                     continue
                 if line_split[0] == 'SNP':
-                    if [s for s in line_split if 'snp_type=' in s][0].split('=')[1] == 'nonsynonymous' or [s for s in line_split if 'snp_type=' in s][0].split('=')[1] == 'nonsense':
+                    if [s for s in line_split if 'snp_type=' in s][0].split('=')[1] == 'nonsynonymous':# NOTE that nonsense mutations are thrown out when calculating dN/dS!!!!!! or [s for s in line_split if 'snp_type=' in s][0].split('=')[1] == 'nonsense':
                         r=random.random()
                         if frequency > r:
                             count += 1
@@ -154,6 +154,11 @@ for k,v in test1['1'].items():
         myc+=1
         '''
 #%%
+def calc_targetsize(p=1/6,q=1/6,r=1/6,s=1/6,t=1/6,possATtoCG=0,possATtoGC=0,possATtoTA=0,possCGtoGC=0,possCGtoTA=0,possGCtoTA=0):
+    u=1-p-q-r-s-t
+    NorS=6*(p*possATtoCG + q*possATtoGC + r*possATtoTA + s*possCGtoGC + t*possCGtoTA + u*possGCtoTA)
+    return NorS
+
 def calc_dNdS_with_pseudocount(N=1,S=1,DN=0,DS=0):
     dN = -3/4*math.log(1-(4/3*DN/(N)))
     dS = -3/4*math.log(1-(4/3*(DS+1)/(S)))
@@ -192,7 +197,52 @@ def calc_dNdS_fromtuple_with_pseudocount(intup):
 
 #calc_dNdS_fromtuple(mm9)
 #%%
-#values for N and S were calculated using gdtools count -b. See script in the dNdS_gdtools.count.sh file
+#values for N and S were calculated using gdtools count -b. See script: dNdS_gdtools.count.sh
+#The outputted values were then combined with the equations of Ina 1995 (J Mol Evol) as you can see in the calc_targetsize() function.
+#The mutation spectrum for Saccharomyces cerevisiae used here comes from Zhu et al. 2014 (PNAS)
+
+#possATtoCG=0,possATtoGC=0,possATtoTA=0,possCGtoGC=0,possCGtoTA=0,possGCtoTA=0
+p = .11;q = .144;r = .063;s = .152;t = .35;u = .182 
+Stargetsizes=[838572,1829989,837108,368322,1039993,428569]
+Ntargetsizes=[4094274,3230047,3733629,2848418,2093370,2536008]
+
+
+yeastN=calc_targetsize(p=p,q=q,r=r,s=s,t=t,possATtoCG=Ntargetsizes[0],possATtoGC=Ntargetsizes[1],possATtoTA=Ntargetsizes[2],possCGtoGC=Ntargetsizes[3],possCGtoTA=Ntargetsizes[4],possGCtoTA=Ntargetsizes[5])
+yeastS=calc_targetsize(p=p,q=q,r=r,s=s,t=t,possATtoCG=Stargetsizes[0],possATtoGC=Stargetsizes[1],possATtoTA=Stargetsizes[2],possCGtoGC=Stargetsizes[3],possCGtoTA=Stargetsizes[4],possGCtoTA=Stargetsizes[5])
+dnds_dict=dict()
+zerolist=[]
+for k,v in testS.items():
+    zerolist+=[v]
+if min(zerolist)<=0:
+    for i in range(1,81):
+        eo = calc_dNdS_with_pseudocount(yeastN,yeastS,testN[i],testS[i])
+        dnds_dict[i]=eo
+    print("A pseudocount of 1 was added to every DS value.")
+else:
+    for i in range(1,81):
+        eo = calc_dNdS_no_zeroes(yeastN,yeastS,testN[i],testS[i])
+        dnds_dict[i]=eo    
+    print("No populations had DS = 0, so no pseudocount of 1 was added.")
+
+dnds_df = pd.DataFrame(dnds_dict,index=['dN/dS'])
+dnds_df=dnds_df.T
+dnds_df.fillna(0, inplace=True)
+
+dnds_df_out = "~\\Documents\\GitHub\\XevoLong\\Pipeline_XL\\3_Python\\dnds_output_spectrum.aware.csv"
+dnds_df.to_csv(dnds_df_out, sep = ',', index = True)
+
+
+
+
+
+
+
+#Spectrum-aware NYI
+
+
+
+
+#%% Deprecated cell
 yeastN=18535746
 yeastS=5342553
 dnds_dict=dict()
