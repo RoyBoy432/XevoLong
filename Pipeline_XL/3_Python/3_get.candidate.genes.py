@@ -527,7 +527,26 @@ print(end - start)
     
     
     
+    #%%
+#read in the file
+#for each locus
+#make a dict st
+#k = locus tag
+#v = gene name
+#write out the dict
+def output_gene_names(infile,inDict=DD):
+    mypanda=pd.read_csv(infile);outD=dict();counter=0
+    for locus_tag in mypanda["Gene"]:
+        outD[counter]=inDict[locus_tag];counter+=1
+        print(inDict[locus_tag])
+        
+    writeout=pd.DataFrame.from_dict(outD,orient="index")
+    return writeout
     
+fixedPanda=output_gene_names(r"C:\Users\rmoge\OneDrive\20230124_yeast-status\candidate.genes.pvalues_fixed_for.Python.csv",DD);
+polyPanda=output_gene_names(r"C:\Users\rmoge\OneDrive\20230124_yeast-status\candidate.genes.pvalues_polymorphic_for.Python.csv",DD);
+fixedPanda.to_csv(r"C:\Users\rmoge\OneDrive\20230124_yeast-status\candidate.genes.pvalues_fixed_from.Python.csv")
+polyPanda.to_csv(r"C:\Users\rmoge\OneDrive\20230124_yeast-status\candidate.genes.pvalues_polymorphic_from.Python.csv")
     
     
 #%%
