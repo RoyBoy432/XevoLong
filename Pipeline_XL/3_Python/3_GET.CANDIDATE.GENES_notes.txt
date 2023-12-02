@@ -1,0 +1,2 @@
+20231201
+In that Python script, not that it is only using SNPs. Not indels.

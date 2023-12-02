@@ -548,6 +548,29 @@ polyPanda=output_gene_names(r"C:\Users\rmoge\OneDrive\20230124_yeast-status\cand
 fixedPanda.to_csv(r"C:\Users\rmoge\OneDrive\20230124_yeast-status\candidate.genes.pvalues_fixed_from.Python.csv")
 polyPanda.to_csv(r"C:\Users\rmoge\OneDrive\20230124_yeast-status\candidate.genes.pvalues_polymorphic_from.Python.csv")
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
 #%%
 def get_pvalues_from_simulations(workingdir=workingdir,popTreatments=[],poptrtsDict=poptrtsD,gxpcounts={},dirname='',repsNumber=5357):
